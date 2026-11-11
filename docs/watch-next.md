@@ -4,6 +4,17 @@ A launcher can show the rows other apps publish to the system's Continue watchin
 and preview channels. They live in the TV provider, behind `TvContract.WatchNextPrograms` and
 `TvContract.PreviewPrograms`.
 
+## What Home does with them
+
+- **Rows under the grid:** each channel with cards is a row below the apps (Launcher settings, Recommendations, has a
+  switch for each channel). With `single_row` there is no grid, so the rows are a page of their own (Down from the row).
+- **Dock shelf (`dock_channels`, off by default):** moving along the dock shows the focused app's channels and its
+  Continue watching cards as one row above its name. Up enters it, Down returns.
+- **Artwork:** pictures are fetched when a card first shows, kept in an 8 MB memory cache and in the app's cache
+  folder (24 MB, least recently used dropped first), so a restart does not download them again.
+- **Check what an app publishes** with `adb logcat -s TvRecs` after Home starts: it lists every channel and its
+  card count. The shell cannot query the provider itself (see below).
+
 - **Permission:** `android.permission.READ_TV_LISTINGS`, a runtime permission. Request it with
   the normal dialog, or grant it from a shell: `pm grant <package> android.permission.READ_TV_LISTINGS`.
 - **Not needed:** `com.android.providers.tv.permission.ACCESS_ALL_EPG_DATA` is
