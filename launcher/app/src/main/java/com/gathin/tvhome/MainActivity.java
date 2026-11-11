@@ -354,8 +354,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private boolean dockEditing;
     /** Dock place being changed in edit-dock mode, or -1 while the place is still being chosen. */
     private int dockEditSlot = -1;
-    /** Tile menu's "Add to dock": the app waiting for a dock place in edit-dock mode, or null. */
-    private String dockEditAppKey;
+
     private AppLibraryDialog appLibrary;
     private boolean appLibrarySelection;
     private boolean libraryOkOpens;
@@ -543,6 +542,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         // dock_title false: the name above the dock (and the cinematic lines under it) never shows; the glow
         // still follows the dock.
         if (!cfg.dockTitle) hero.setVisibility(View.GONE);
+        if (cfg.dockChannels && dockRow) setUpDockShelf();
         greeting = findViewById(R.id.greeting);
         clockBlock = findViewById(R.id.leftBlock);
         clockRefresh = new ClockRefresh(clockBlock);
@@ -672,7 +672,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             }
         });
         ((GridLayoutManager) grid.getLayoutManager()).setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
-            @Override public int getSpanSize(int position) { return !singleRow && adapter != null && adapter.isLibraryAt(position) ? COLUMNS : 1; }
+            @Override public int getSpanSize(int position) {
+                // The library pill and the recommendation rows are full-width items after the tiles.
+                return !singleRow && adapter != null
+                        && (adapter.isLibraryAt(position) || adapter.isRecAt(position) || adapter.isRecPromptAt(position))
+                        ? COLUMNS : 1;
+            }
         });
         grid.setHasFixedSize(true);
         grid.setItemAnimator(null);
@@ -1118,6 +1123,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             default:
                 break;
         }
+        refreshRecommendations();
         if (openLiveTvAfterBoot()) return;
         updateGreeting();
         updatePanel();
@@ -1199,6 +1205,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         final boolean restoreLibrary = adapter.isLibraryAt(adapter.appCount()) && footer != null
                 && footer.itemView.findViewById(R.id.btnLibrary) != null
                 && footer.itemView.findViewById(R.id.btnLibrary).hasFocus();
+        final boolean restoreRec = focusInRecs();
+        final int recRow = recFocusRow, recIndex = recFocusIndex;
         // Capture the app before rebinding can move focus and overwrite its key.
         final String returnKey = lastFocusedKey;
         final int returnSlot = lastFocused;
@@ -1221,7 +1229,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
         if (restoreFocus) {
             // Keep a focused footer at the end even when the app count changes.
-            if (restoreLibrary) grid.post(this::focusLibrary);
+            if (restoreRec) grid.post(() -> restoreRecFocus(recRow, recIndex));
+            else if (restoreLibrary) grid.post(this::focusLibrary);
             else restoreFocus();
         } else {
             // A package change must not steal focus from a top button or the Inputs popup.
@@ -1354,6 +1363,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         // process in the foreground; never blank the screen the owner is looking at.
         if (!MemoryTrimPolicy.shouldRelease(level, started)) return;
         adapter.clear();
+        recsSignature = null;
+        RecImages.clear();
         // Detach the adapter too: with Home stopped no layout pass runs, so the tile views (and the bitmaps
         // they hold) would stay attached until Home comes back. setAdapter(null) recycles them now.
         grid.setAdapter(null);
@@ -1551,9 +1562,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         boolean back = code == KeyEvent.KEYCODE_BACK || code == KeyEvent.KEYCODE_ESCAPE;
         if (back) {
             if (!down) {
-                if (dockEditAppKey != null) {
-                    endReorder();   // "Add to dock" cancelled before a place was chosen
-                } else if (dockEditSlot >= 0) {
+                if (dockEditSlot >= 0) {
                     int slot = dockEditSlot;
                     dockEditSlot = -1;
                     dimOthers();
@@ -1568,13 +1577,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (ok && pos >= 0) {
             if (!down) {
                 int n = adapter.movableCount();
-                if (dockEditAppKey != null) {
-                    if (pos < Math.min(COLUMNS, n)) {
-                        int from = adapter.positionOf(dockEditAppKey);
-                        if (from >= 0) swapIntoDock(pos, from);
-                        else endReorder();
-                    }
-                } else if (dockEditSlot < 0) {
+                if (dockEditSlot < 0) {
                     if (pos < Math.min(COLUMNS, n)) {
                         dockEditSlot = pos;
                         dimOthers();
@@ -1590,11 +1593,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         return super.dispatchKeyEvent(event);   // arrows navigate as usual
     }
 
-    /**
-     * Edit-dock mode started from the tile menu. A dock app: its place is already chosen, so focus goes to the grid
-     * for the app to put there. A grid app: it is already chosen, so focus goes to the dock for the place.
-     */
-    private void startDockEditFor(String key, boolean inDock) {
+    /** Edit-dock mode started from the tile menu: the dock app's place is already chosen, so focus goes to the grid for the app to put there. */
+    private void startDockEditFor(String key) {
         if (reordering) endReorder();
         if (!beginReorder()) return;
         dockEditing = true;
@@ -1602,15 +1602,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         int n = adapter.movableCount();
         if (pos < 0) {
             endReorder();
-        } else if (inDock) {
+        } else {
             dockEditSlot = pos;
             dimOthers();
             focusTile(Math.min(COLUMNS, n - 1));
             Toast.makeText(this, R.string.dock_edit_pick_app, Toast.LENGTH_LONG).show();
-        } else {
-            dockEditAppKey = key;
-            focusTile(0);
-            Toast.makeText(this, R.string.dock_edit_pick_place, Toast.LENGTH_LONG).show();
         }
     }
 
@@ -1666,7 +1662,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (!reordering) return;
         dockEditing = false;
         dockEditSlot = -1;
-        dockEditAppKey = null;
+
         drop();
         reordering = false;
         dimOthers();   // drop() ran while reordering was still on; restore full brightness now the mode is off
@@ -1881,6 +1877,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 else grid.smoothScrollBy(0, dy);
             }
             showHero(position, scroll ? r.top - dy : r.top);
+            if (dockShelf != null) {
+                dockTopInRoot = scroll ? r.top - dy : r.top;
+                updateDockShelf(position);
+            }
         } else {
             // Below the dock (or in a plain grid) the glow follows the tile without the big name; letting it
             // fade out left the grid on plain black.
@@ -2196,6 +2196,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      * name above the dock does not show (every grid tile has its name underneath).
      */
     private void showGlowOnly(int position) {
+        hideDockShelf();
         int color = adapter.ambientColorAt(position);
         stopAmbientAnimation();
         hero.animate().cancel();
@@ -2227,6 +2228,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     private void hideHero() {
+        hideDockShelf();
         if (!heroShown) return;
         stopAmbientAnimation();
         hero.animate().cancel();
@@ -2439,8 +2441,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (singleRow) {
             // One row: Up leaves for the top bar, Down has nowhere to go, and Left/Right walk the whole row,
             // stopping at its two ends (the default focus search scrolls the row to the next tile).
-            if (keyCode == KeyEvent.KEYCODE_DPAD_UP) return false;
-            if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) return true;
+            if (keyCode == KeyEvent.KEYCODE_DPAD_UP) return focusDockShelf();
+            if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+                // No grid under a single row for the recommendation rows to sit in: they are a page of their own.
+                if (Recs.enabled(this)) startActivity(new Intent(this, RecsPageActivity.class));
+                return true;
+            }
             boolean forward = rtlAppGrid ? keyCode == KeyEvent.KEYCODE_DPAD_LEFT : keyCode == KeyEvent.KEYCODE_DPAD_RIGHT;
             int last = adapter.focusablePosition(count - 1);
             if (forward && position >= last) {
@@ -2463,12 +2469,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                     rtlAppGrid, keyCode == KeyEvent.KEYCODE_DPAD_LEFT);
         }
         if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
-            if (position < COLUMNS) return false;          // dock row: let focus move to the top bar
+            if (position < COLUMNS) return focusDockShelf();   // dock row: into its channels, else to the top bar
             target = position - COLUMNS;
         } else {
             int lastRowStart = ((count - 1) / COLUMNS) * COLUMNS;
             if (position >= lastRowStart) {
                 if (adapter.isLibraryAt(count)) focusLibrary();
+                else if (adapter.firstRecPosition() >= 0) focusRec(adapter.firstRecPosition(), 0);
                 return true;
             }
             target = Math.min(position + COLUMNS, count - 1);
@@ -2484,6 +2491,251 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         libraryFocusPending = false;
         hideGlass();
         hideHero();
+    }
+
+    // ---- recommendation rows (the footer after the tiles and the library pill) -------------------
+
+    /** Where focus last was in the rows (row counted from the first one), to put it back after Home rebuilds its tiles. */
+    private int recFocusRow, recFocusIndex;
+    /** What the rows show now (RecRows signatures), so a refresh that finds the same cards changes nothing. */
+    private String recsSignature;
+    private final java.util.concurrent.ExecutorService recsExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
+    /** Apps are asked once per process to publish their first channel (Recs.requestPrograms). */
+    private static boolean recsRequested;
+
+    @Override public void onLibraryDown() {
+        int first = adapter.firstRecPosition();
+        if (first >= 0) focusRec(first, 0);
+    }
+
+    @Override public void onRecFocused(int position, int index) {
+        recFocusRow = Math.max(0, position - Math.max(0, adapter.firstRecPosition()));
+        recFocusIndex = index;
+        libraryFocusPending = false;
+        hideGlass();
+        hideHero();
+    }
+
+    @Override public boolean onRecKey(int position, int index, int keyCode) {
+        if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+            if (position + 1 < adapter.getItemCount()) focusRec(position + 1, index);
+            return true;
+        }
+        int previous = position - 1;
+        if (adapter.isRecAt(previous)) focusRec(previous, index);
+        else if (adapter.isLibraryAt(previous)) focusLibrary();
+        else onLibraryUp();   // no library pill: back to the last row of tiles
+        return true;
+    }
+
+    /** The focusable view of a recommendation row's card (or of the allow button), or null when it is not laid out. */
+    private View recFocusTarget(int position, int index) {
+        RecyclerView.ViewHolder holder = grid.findViewHolderForAdapterPosition(position);
+        if (holder == null) return null;
+        View button = holder.itemView.findViewById(R.id.btnRecPrompt);
+        if (button != null) return button;
+        RecyclerView list = holder.itemView.findViewById(R.id.recList);
+        if (list == null || list.getAdapter() == null || list.getAdapter().getItemCount() == 0) return null;
+        RecyclerView.ViewHolder card = list.findViewHolderForAdapterPosition(
+                Math.max(0, Math.min(index, list.getAdapter().getItemCount() - 1)));
+        return card == null ? null : card.itemView.findViewById(R.id.recCard);
+    }
+
+    /** Moves focus to card index of the row at this grid position, scrolling the grid or the row to it first if needed. */
+    private void focusRec(final int position, final int index) {
+        cancelPendingFocusScroll();
+        if (!adapter.isRecAt(position) && !adapter.isRecPromptAt(position)) return;
+        RecyclerView.ViewHolder holder = grid.findViewHolderForAdapterPosition(position);
+        if (holder != null) {
+            View target = recFocusTarget(position, index);
+            if (target != null) {
+                target.requestFocus();
+                return;
+            }
+            // The row is there but the card is scrolled out of it: bring the card in, then focus it.
+            final RecyclerView list = holder.itemView.findViewById(R.id.recList);
+            if (list != null && list.getAdapter() != null && list.getAdapter().getItemCount() > 0) {
+                list.scrollToPosition(Math.max(0, Math.min(index, list.getAdapter().getItemCount() - 1)));
+                list.post(() -> {
+                    View later = recFocusTarget(position, index);
+                    if (later != null) later.requestFocus();
+                });
+                return;
+            }
+        }
+        if (!animations || reducedMotion) {
+            grid.scrollToPosition(position);
+            grid.post(() -> {
+                View later = recFocusTarget(position, index);
+                if (later != null) later.requestFocus();
+            });
+            return;
+        }
+        pendingFocusScroll = new RecyclerView.OnScrollListener() {
+            @Override public void onScrollStateChanged(@NonNull RecyclerView rv, int state) {
+                if (state != RecyclerView.SCROLL_STATE_IDLE) return;
+                rv.removeOnScrollListener(this);
+                if (pendingFocusScroll != this) return;
+                pendingFocusScroll = null;
+                View later = recFocusTarget(position, index);
+                if (later != null) later.requestFocus();
+                else grid.post(() -> focusRec(position, index));
+            }
+        };
+        grid.addOnScrollListener(pendingFocusScroll);
+        grid.smoothScrollToPosition(position);
+    }
+
+    /** Puts focus back in the rows after a rebuild; the rows sit last, so a shorter list still lands on its last row. */
+    private void restoreRecFocus(int row, int index) {
+        int first = adapter.firstRecPosition();
+        if (first < 0) {
+            focusTile(lastFocused);
+            return;
+        }
+        focusRec(Math.min(first + row, adapter.getItemCount() - 1), index);
+    }
+
+    /** True while focus is on a recommendation card or the allow button. */
+    private boolean focusInRecs() {
+        View focus = getCurrentFocus();
+        return focus != null && (focus.getId() == R.id.recCard || focus.getId() == R.id.btnRecPrompt);
+    }
+
+    /**
+     * Reads the channels other apps publish (off the main thread) and shows the ones the owner left on. Called when
+     * Home comes back; a read that finds the same cards changes nothing, and nothing changes under focus in the rows.
+     */
+    private void refreshRecommendations() {
+        if (singleRow && dockShelf == null) {
+            applyRecommendations(java.util.Collections.<Recs.Channel>emptyList(), false);
+            return;
+        }
+        if (!Recs.enabled(this)) {
+            applyRecommendations(java.util.Collections.<Recs.Channel>emptyList(), false);
+            return;
+        }
+        if (!Recs.hasPermission(this)) {
+            applyRecommendations(java.util.Collections.<Recs.Channel>emptyList(), !singleRow);
+            return;
+        }
+        final Context app = getApplicationContext();
+        recsExecutor.execute(() -> {
+            List<Recs.Channel> all = Recs.load(app);
+            if (all.isEmpty() && !recsRequested) {
+                // Nothing published yet: ask the apps that listen for it to publish their first channel, as the stock
+                // Home does after an install, and read again shortly.
+                recsRequested = true;
+                if (Recs.requestPrograms(app) > 0) {
+                    try { Thread.sleep(2500); } catch (InterruptedException e) { return; }
+                    all = Recs.load(app);
+                }
+            }
+            final List<Recs.Channel> shown = Recs.visible(app, all);
+            runOnUiThread(() -> {
+                if (!isDestroyed() && !isFinishing()) applyRecommendations(shown, false);
+            });
+        });
+    }
+
+    private void applyRecommendations(List<Recs.Channel> rows, boolean prompt) {
+        StringBuilder sb = new StringBuilder(prompt ? "prompt" : "rows");
+        for (Recs.Channel c : rows) sb.append('\n').append(c.signature());
+        String signature = sb.toString();
+        if (signature.equals(recsSignature) || focusInRecs()) return;
+        recsSignature = signature;
+        dockChannelRows = rows;
+        // A single row has no grid under it for the rows: they are a page of their own, and only feed the shelf.
+        if (!singleRow) adapter.setRecommendations(rows, prompt);
+        View focus = getCurrentFocus();
+        if (dockShelf != null && heroShown && focus != null && focus.getId() == R.id.card
+                && (singleRow || lastFocused < COLUMNS)) {
+            updateDockShelf(lastFocused);
+        }
+    }
+
+    // ---- dock channels (config.xml dock_channels) ------------------------------------------------
+
+    /** The shelf above the dock's name, or null while dock_channels is off. */
+    private RecRows.RowHolder dockShelf;
+    /** The channels Home shows (the same as the rows under the grid): the shelf picks the focused app's. */
+    private List<Recs.Channel> dockChannelRows = Collections.emptyList();
+    /** Top of the focused dock tile in root coordinates, as showHero was given it. */
+    private float dockTopInRoot;
+
+    private void setUpDockShelf() {
+        dockShelf = RecRows.createShelf(root, new RecRows.Host() {
+            @Override public boolean onRecKey(int position, int index, int keyCode) {
+                if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+                    focusTile(lastFocused);
+                    return true;
+                }
+                return false;   // Up goes on to the top bar
+            }
+
+            @Override public void onRecFocused(int position, int index) { }
+        }, 0.7f);
+        View shelf = dockShelf.itemView;
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM);
+        lp.setMarginStart(Math.round(56 * density));
+        lp.setMarginEnd(Math.round(56 * density));
+        shelf.setLayoutParams(lp);
+        shelf.setVisibility(View.GONE);
+        root.addView(shelf);
+    }
+
+    /**
+     * The focused dock app's channels: its own rows and the Continue watching cards that are its, as one row of
+     * cards above the name. Hidden when the app has none.
+     */
+    private void updateDockShelf(int position) {
+        String pkg = adapter.packageAt(position);
+        Recs.Channel channel = null;
+        if (pkg != null) {
+            long id = 1;
+            for (Recs.Channel c : dockChannelRows) {
+                for (Recs.Program p : c.programs) {
+                    if (!pkg.equals(p.pkg) || (channel != null && channel.programs.size() >= Recs.MAX_PROGRAMS)) continue;
+                    if (channel == null) channel = new Recs.Channel(pkg, pkg, pkg, "", adapter.labelAt(position));
+                    // Ids are only unique within a provider table, and the row needs them unique across both.
+                    channel.programs.add(new Recs.Program(id++, p.pkg, p.title, p.poster, p.intentUri, p.aspect, p.weight));
+                }
+            }
+        }
+        if (channel == null) {
+            hideDockShelf();
+            return;
+        }
+        View shelf = dockShelf.itemView;
+        dockShelf.bind(channel);
+        // Bottom edge a little above the name's top: the same spot showHero puts the name's.
+        float heroTop = dockTopInRoot - 40 * density - hero.getHeight();
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) shelf.getLayoutParams();
+        int bottom = Math.max(0, Math.round(root.getHeight() - heroTop + 4 * density));
+        if (lp.bottomMargin != bottom) {
+            lp.bottomMargin = bottom;
+            shelf.setLayoutParams(lp);
+        }
+        if (shelf.getVisibility() != View.VISIBLE) {
+            shelf.animate().cancel();
+            shelf.setAlpha(0f);
+            shelf.setVisibility(View.VISIBLE);
+            shelf.animate().alpha(1f).setDuration(animations && !reducedMotion ? 220 : 0).start();
+        }
+    }
+
+    private void hideDockShelf() {
+        if (dockShelf == null || dockShelf.itemView.getVisibility() != View.VISIBLE) return;
+        dockShelf.itemView.animate().cancel();
+        dockShelf.itemView.setVisibility(View.GONE);
+    }
+
+    /** Up from a dock tile: the first card of the shelf, when it shows. False sends Up on to the top bar. */
+    private boolean focusDockShelf() {
+        if (dockShelf == null || dockShelf.itemView.getVisibility() != View.VISIBLE) return false;
+        View card = dockShelf.cardAt(0);
+        return card != null && card.requestFocus();
     }
 
     /**
@@ -3840,10 +4092,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         View panel = getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
         LinearLayout rows = panel.findViewById(R.id.rows);
         PopupWindow popup = glassPopup(panel, (int) (200 * density));
-        if (dockRow && position < adapter.movableCount()) {
-            boolean inDock = position < COLUMNS;
-            addSettingsMenuRow(rows, popup, inDock ? R.string.tile_replace_in_dock : R.string.tile_add_to_dock,
-                    () -> startDockEditFor(key, inDock));
+        if (dockRow && position < COLUMNS && position < adapter.movableCount()) {
+            addSettingsMenuRow(rows, popup, R.string.tile_replace_in_dock, () -> startDockEditFor(key));
         }
         if (position < adapter.movableCount()) addSettingsMenuRow(rows, popup, R.string.tile_move, () -> {
             if (!beginReorder()) return;

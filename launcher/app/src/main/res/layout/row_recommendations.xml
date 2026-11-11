@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One recommendation channel under the app grid: its name and a sideways row of cards. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingTop="22dp"
+    android:paddingBottom="6dp"
+    android:clipChildren="false"
+    android:clipToPadding="false">
+
+    <TextView
+        android:id="@+id/recTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:gravity="left"
+        android:singleLine="true"
+        android:ellipsize="end"
+        android:textColor="#E6FFFFFF"
+        android:textSize="17sp"
+        android:fontFamily="@string/font_medium"
+        android:letterSpacing="0.04" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recList"
+        android:layout_width="match_parent"
+        android:layout_height="152dp"
+        android:layout_marginTop="6dp"
+        android:paddingStart="4dp"
+        android:paddingEnd="4dp"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:overScrollMode="never"
+        android:scrollbars="none"
+        android:nestedScrollingEnabled="false" />
+</LinearLayout>

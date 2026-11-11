@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The recommendation rows as a page of their own, for the scrolling dock (single_row), which has no grid under it. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#FF05070C">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="66dp"
+        android:layout_marginTop="30dp"
+        android:gravity="left"
+        android:text="@string/rec_title"
+        android:textColor="#FFFFFFFF"
+        android:textSize="30sp"
+        android:fontFamily="@string/font_light" />
+
+    <TextView
+        android:id="@+id/recsPageStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="66dp"
+        android:layout_marginEnd="66dp"
+        android:layout_marginTop="8dp"
+        android:gravity="left"
+        android:textColor="#B3FFFFFF"
+        android:textSize="16sp"
+        android:fontFamily="@string/font_regular" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recsPage"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingStart="56dp"
+        android:paddingEnd="56dp"
+        android:paddingBottom="40dp"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:overScrollMode="never"
+        android:scrollbars="none" />
+</LinearLayout>

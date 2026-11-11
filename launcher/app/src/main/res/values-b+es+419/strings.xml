@@ -98,9 +98,7 @@
     <string name="dock_edit">Editar la barra de favoritos</string>
     <string name="dock_edit_hint">Elige el espacio de la barra de favoritos que quieres cambiar y presiona OK. Presiona Atrás para terminar.</string>
     <string name="dock_edit_pick_app">Ahora elige la aplicación que quieres colocar ahí y presiona OK. Presiona Atrás para elegir otro espacio.</string>
-    <string name="tile_add_to_dock">Agregar a favoritos</string>
     <string name="tile_replace_in_dock">Reemplazar por otra aplicación</string>
-    <string name="dock_edit_pick_place">Elige el espacio de la barra de favoritos para esta aplicación y presiona OK. Presiona Atrás para cancelar.</string>
     <string name="reorder">Reordenar aplicaciones</string>
     <string name="tile_move">Mover</string>
     <string name="reorder_hint">Presiona OK para seleccionar una aplicación, usa las flechas para moverla y presiona Atrás para colocarla. Presiona Atrás otra vez para terminar.</string>

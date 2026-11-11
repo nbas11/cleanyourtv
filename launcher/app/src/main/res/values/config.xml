@@ -34,7 +34,7 @@
     </string-array>
 
     <!-- The TV's Live TV / tuner app, offered at the end of the Inputs menu. Leave empty to omit. -->
-    <string name="live_tv_package" translatable="false">com.mediatek.wwtv.tvcenter</string>
+    <string name="live_tv_package" translatable="false"></string>
 
     <!-- Open the Live TV app above the first time Home comes up after the TV is switched on, for sets that are
          mostly used for broadcast TV. Once per boot: Home after that stays Home. Can also be set with
@@ -184,6 +184,11 @@
          the same task before the helper sees the press, so Settings stacked on it and Back landed there (Skyworth
          2K NSTV, Google TV 14). Also "settings_key_clear_task" in a theme's config.json. -->
     <bool name="settings_key_clear_task">false</bool>
+    <!-- true: moving along the dock shows the focused app's channels (the rows it publishes to the TV provider,
+         and its Continue watching cards) as a small row of cards above its name; Up from the dock goes into it,
+         Down comes back. Needs recommendations on and a dock_row that is not single_row. Nothing is read or
+         drawn while this is false. Can also be set with "dock_channels": true in a theme's config.json. -->
+    <bool name="dock_channels">false</bool>
 
     <!-- A force stop of the launcher (Settings, a cleaner app, am force-stop) takes HomeKeyService and InputKeyService
          off the enabled list. true: Home puts the helpers that were running back when it starts; one turned off in

@@ -98,9 +98,7 @@
     <string name="power_menu">Перезагрузить…</string>
     <string name="dock_edit_hint">Выберите место в доке и нажмите ОК. Назад — готово.</string>
     <string name="dock_edit_pick_app">Теперь выберите приложение для этого места и нажмите ОК. Назад — выбрать другое место.</string>
-    <string name="tile_add_to_dock">Добавить в док</string>
     <string name="tile_replace_in_dock">Заменить другим приложением</string>
-    <string name="dock_edit_pick_place">Выберите место в доке для этого приложения и нажмите ОК. Назад — отмена.</string>
     <string name="reorder">Изменить порядок приложений</string>
     <string name="tile_move">Переместить</string>
     <string name="reorder_hint">ОК — взять приложение, стрелки — переместить, Назад — поставить. Ещё раз Назад — готово.</string>

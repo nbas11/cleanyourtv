@@ -142,9 +142,7 @@
     <string name="shamsi_month_bahman">巴赫曼</string>
     <string name="shamsi_month_esfand">埃斯凡德</string>
 
-    <string name="dock_edit_pick_place">选择这个应用要放的程序坞位置，然后按确定。按返回取消。</string>
     <string name="dock_opacity_label">程序坞透明度</string>
-    <string name="tile_add_to_dock">添加到程序坞</string>
     <string name="tile_move">移动</string>
     <string name="tile_replace_in_dock">替换为其他应用</string>
     <string name="game_live">直播中</string>

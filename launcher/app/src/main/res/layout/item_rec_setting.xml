@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One channel in the Recommendations settings: OK switches it on or off. -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/SettingsRow"
+    android:layout_marginTop="10dp"
+    android:singleLine="true"
+    android:ellipsize="end" />

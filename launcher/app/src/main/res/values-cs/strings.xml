@@ -82,9 +82,7 @@
     <string name="power_menu">Restartovat…</string>
     <string name="dock_edit_hint">Vyberte místo v doku, které chcete změnit, a stiskněte OK. Tlačítkem Zpět skončíte.</string>
     <string name="dock_edit_pick_app">Nyní vyberte aplikaci pro toto místo a stiskněte OK. Tlačítkem Zpět vyberete jiné místo.</string>
-    <string name="tile_add_to_dock">Přidat do doku</string>
     <string name="tile_replace_in_dock">Nahradit jinou aplikací</string>
-    <string name="dock_edit_pick_place">Vyberte místo v doku pro tuto aplikaci a stiskněte OK. Tlačítkem Zpět zrušíte.</string>
     <string name="reorder">Seřadit aplikace</string>
     <string name="tile_move">Přesunout</string>
     <string name="reorder_hint">OK zvedne aplikaci, šipky ji posunou, Zpět ji položí. Dalším Zpět skončíte.</string>

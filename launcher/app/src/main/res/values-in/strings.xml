@@ -79,9 +79,7 @@
     <string name="power_menu">Mulai ulang…</string>
     <string name="dock_edit_hint">Pilih posisi dock yang ingin diubah lalu tekan OK. Kembali untuk selesai.</string>
     <string name="dock_edit_pick_app">Sekarang pilih aplikasi untuk ditempatkan di sana lalu tekan OK. Kembali untuk memilih posisi lain.</string>
-    <string name="tile_add_to_dock">Tambah ke dock</string>
     <string name="tile_replace_in_dock">Ganti dengan aplikasi lain</string>
-    <string name="dock_edit_pick_place">Pilih posisi dock untuk aplikasi ini lalu tekan OK. Kembali untuk membatalkan.</string>
     <string name="reorder">Tata Ulang App</string>
     <string name="tile_move">Pindahkan</string>
     <string name="reorder_hint">OK mengambil aplikasi, panah memindahkannya, Kembali menempatkannya. Kembali lagi untuk selesai.</string>

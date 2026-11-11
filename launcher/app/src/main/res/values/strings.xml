@@ -101,9 +101,7 @@
     <string name="power_menu">Restart…</string>
     <string name="dock_edit_hint">Choose the dock place to change and press OK. Back to finish.</string>
     <string name="dock_edit_pick_app">Now choose the app to put there and press OK. Back to choose another place.</string>
-    <string name="tile_add_to_dock">Add to dock</string>
     <string name="tile_replace_in_dock">Replace with another app</string>
-    <string name="dock_edit_pick_place">Choose the dock place for this app and press OK. Back to cancel.</string>
     <string name="reorder">Reorder apps</string>
     <string name="tile_move">Move</string>
     <string name="reorder_hint">OK picks up an app, arrows move it, Back places it. Back again to finish.</string>

@@ -80,9 +80,7 @@
     <string name="power_menu">Start på nytt…</string>
     <string name="dock_edit_hint">Velg plassen du vil endre i favorittraden, og trykk OK. Trykk Tilbake for å avslutte.</string>
     <string name="dock_edit_pick_app">Velg appen du vil plassere der, og trykk OK. Trykk Tilbake for å velge en annen plass.</string>
-    <string name="tile_add_to_dock">Legg til i favorittraden</string>
     <string name="tile_replace_in_dock">Erstatt med en annen app</string>
-    <string name="dock_edit_pick_place">Velg en plass i favorittraden for denne appen, og trykk OK. Trykk Tilbake for å avbryte.</string>
     <string name="reorder">Endre apprekkefølge</string>
     <string name="tile_move">Flytt</string>
     <string name="reorder_hint">Trykk OK for å velge en app, bruk pilene for å flytte den, og trykk Tilbake for å plassere den. Trykk Tilbake igjen for å avslutte.</string>

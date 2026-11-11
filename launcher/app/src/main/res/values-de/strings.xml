@@ -47,9 +47,7 @@
     <string name="power_menu">Neu starten…</string>
     <string name="dock_edit_hint">Wähle den Dock-Platz, den du ändern willst, und drücke OK. Zurück zum Beenden.</string>
     <string name="dock_edit_pick_app">Wähle jetzt die App für diesen Platz und drücke OK. Zurück, um einen anderen Platz zu wählen.</string>
-    <string name="tile_add_to_dock">Zum Dock hinzufügen</string>
     <string name="tile_replace_in_dock">Durch andere App ersetzen</string>
-    <string name="dock_edit_pick_place">Wähle den Dock-Platz für diese App und drücke OK. Zurück zum Abbrechen.</string>
     <string name="reorder">Apps anordnen</string>
     <string name="tile_move">Verschieben</string>
     <string name="reorder_hint">OK hebt eine App an, Pfeiltasten verschieben sie, Zurück legt sie ab. Nochmals Zurück zum Beenden.</string>

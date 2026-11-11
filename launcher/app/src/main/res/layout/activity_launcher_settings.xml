@@ -137,6 +137,16 @@
             android:visibility="gone" />
 
         <TextView
+            android:id="@+id/dockLayoutChoice"
+            style="@style/SettingsRow"
+            android:layout_marginTop="28dp" />
+
+        <TextView
+            android:id="@+id/recommendationsChoice"
+            style="@style/SettingsRow"
+            android:layout_marginTop="10dp" />
+
+        <TextView
             android:id="@+id/followThemeChoice"
             style="@style/SettingsRow"
             android:layout_marginTop="18dp"

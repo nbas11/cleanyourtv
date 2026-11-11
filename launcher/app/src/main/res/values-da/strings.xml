@@ -66,7 +66,6 @@
     <string name="card_state_new">Ny</string>
     <string name="dock_edit">Redigér dock</string>
     <string name="power_menu">Genstart…</string>
-    <string name="tile_add_to_dock">Føj til dock</string>
     <string name="tile_replace_in_dock">Erstat med en anden app</string>
     <string name="reorder">Flyt apps</string>
     <string name="tile_move">Flyt</string>

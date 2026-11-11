@@ -50,7 +50,7 @@ import java.util.Set;
  */
 public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
-    interface TileListener {
+    interface TileListener extends RecRows.Host {
         void onTileFocused(int position, View card);
 
         /** Called for a D-pad direction key on a tile. Return true when handled (focus stays put). */
@@ -58,6 +58,8 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
         void onLibraryRequested();
         void onLibraryFocused();
+        /** Down on the App library pill: on to the first recommendation row, if there is one. */
+        void onLibraryDown();
         /** Hold OK on a tile: the activity shows the tile menu (move, remove from Home, app info). */
         void onTileLongPress(int position, View card);
         void onLibraryUp();
@@ -221,6 +223,9 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     /** Packages drawn from their icon and name even when they have a banner (config.xml icon_tiles). */
     private final Set<String> iconTiles;
     private final List<Entry> items = new ArrayList<>();
+    /** Recommendation rows after the tiles and the library pill (setRecommendations), or the one allow button. */
+    private List<Recs.Channel> recRows = Collections.emptyList();
+    private boolean recPrompt;
 
     AppAdapter(Context ctx, TileListener listener, int dockSize, Config cfg) {
         this.ctx = ctx;
@@ -392,12 +397,16 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     /** Lets go of every tile and its artwork (Home is in the background and memory is short). */
     void clear() {
         items.clear();
+        recRows = Collections.emptyList();
+        recPrompt = false;
         notifyDataSetChanged();
     }
 
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        if (viewType == 2) return RecRows.createRow(parent, listener);
+        if (viewType == 3) return RecRows.createPrompt(parent, listener);
         if (viewType == 1) {
             View row = LayoutInflater.from(ctx).inflate(R.layout.row_app_library, parent, false);
             View button = row.findViewById(R.id.btnLibrary);
@@ -406,6 +415,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             button.setOnKeyListener((v, key, event) -> {
                 if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
                 if (key == KeyEvent.KEYCODE_DPAD_UP) listener.onLibraryUp();
+                else if (key == KeyEvent.KEYCODE_DPAD_DOWN) listener.onLibraryDown();
                 return key == KeyEvent.KEYCODE_DPAD_UP || key == KeyEvent.KEYCODE_DPAD_DOWN
                         || key == KeyEvent.KEYCODE_DPAD_LEFT || key == KeyEvent.KEYCODE_DPAD_RIGHT;
             });
@@ -458,7 +468,11 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     @Override
     @SuppressWarnings("deprecation")
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        if (isLibraryAt(position)) return;
+        if (isLibraryAt(position) || isRecPromptAt(position)) return;
+        if (isRecAt(position)) {
+            ((RecRows.RowHolder) holder).bind(recRows.get(position - footerStart()));
+            return;
+        }
         Holder h = (Holder) holder;
         Entry e = items.get(position);
         if (e.kind == Entry.EMPTY) {
@@ -565,14 +579,54 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     @Override
     public int getItemCount() {
-        return items.size() + (showLibrary ? 1 : 0);
+        return items.size() + (showLibrary ? 1 : 0) + recCount();
     }
 
     int appCount() { return items.size(); }
 
     boolean isLibraryAt(int position) { return showLibrary && position == items.size(); }
 
-    @Override public int getItemViewType(int position) { return isLibraryAt(position) ? 1 : 0; }
+    // ---- recommendation rows: the footer after the tiles and the library pill ---------------------
+
+    private int footerStart() { return items.size() + (showLibrary ? 1 : 0); }
+
+    private int recCount() { return recPrompt ? 1 : recRows.size(); }
+
+    /** A row of recommendation cards sits at this position. */
+    boolean isRecAt(int position) {
+        return !recPrompt && position >= footerStart() && position < footerStart() + recRows.size();
+    }
+
+    /** The single "allow recommendations" button sits at this position. */
+    boolean isRecPromptAt(int position) { return recPrompt && position == footerStart(); }
+
+    /** First position of the recommendation footer, or -1 when there is none. */
+    int firstRecPosition() { return recCount() > 0 ? footerStart() : -1; }
+
+    boolean hasFooter() { return showLibrary || recCount() > 0; }
+
+    /**
+     * Shows these channels (or just the allow button) under the grid. Only the footer's own items change: the tiles
+     * above are not rebound, so focus on them and the dock's scroll position stay put.
+     */
+    void setRecommendations(List<Recs.Channel> rows, boolean prompt) {
+        int start = footerStart();
+        int before = recCount();
+        recRows = new ArrayList<>(rows);
+        recPrompt = prompt;
+        int after = recCount();
+        int common = Math.min(before, after);
+        if (common > 0) notifyItemRangeChanged(start, common);
+        if (after > before) notifyItemRangeInserted(start + common, after - before);
+        else if (before > after) notifyItemRangeRemoved(start + common, before - after);
+    }
+
+    @Override public int getItemViewType(int position) {
+        if (isLibraryAt(position)) return 1;
+        if (isRecAt(position)) return 2;
+        if (isRecPromptAt(position)) return 3;
+        return 0;
+    }
 
     boolean containsPackage(String pkg) {
         for (Entry entry : items) if (entry.pkg.equals(pkg)) return true;
@@ -581,7 +635,10 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     @Override
     public long getItemId(int position) {
-        return isLibraryAt(position) ? Long.MIN_VALUE : items.get(position).component.flattenToShortString().hashCode();
+        if (isLibraryAt(position)) return Long.MIN_VALUE;
+        if (isRecPromptAt(position)) return Long.MIN_VALUE + 1;
+        if (isRecAt(position)) return ("rec:" + recRows.get(position - footerStart()).uniqueKey).hashCode();
+        return items.get(position).component.flattenToShortString().hashCode();
     }
 
     /** Uses this saved order and dock size from the next reload() (Order.ranks, Order.docked). */

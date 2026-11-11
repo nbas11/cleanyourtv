@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Recommendation rows on Home: the channels other apps (YouTube, Prime Video, ...) publish to the TV provider.
+     See Recs, RecRows and RecommendationsActivity. English only: this fork's strings are not translated. -->
+<resources>
+    <!-- Show the rows below the app grid. The owner can switch it off in Launcher settings, Recommendations;
+         each channel has its own switch there. -->
+    <bool name="recommendations">true</bool>
+
+    <string name="rec_title" translatable="false">Recommendations</string>
+    <string name="rec_state" translatable="false">Recommendations: %1$s</string>
+    <string name="rec_allow" translatable="false">Allow recommendations</string>
+    <string name="rec_allow_hint" translatable="false">Home needs permission to read the rows other apps publish.</string>
+    <string name="rec_refresh" translatable="false">Ask apps for new rows</string>
+    <string name="rec_refreshed" translatable="false">Asked %1$d apps. New rows appear on Home in a moment.</string>
+    <string name="rec_none" translatable="false">No channels found yet. Open YouTube or another app once, then press Ask apps for new rows.</string>
+    <string name="rec_loading" translatable="false">Looking for channels\u2026</string>
+    <string name="rec_channel_state" translatable="false">%1$s \u00B7 %2$s</string>
+    <string name="rec_channel_cards" translatable="false">%1$d cards</string>
+    <string name="rec_hint" translatable="false">Each row is a channel an app publishes. Switch off the ones you do not want on Home. Hold OK on a card to come back here.</string>
+    <string name="rec_page_off" translatable="false">Recommendations are switched off. Launcher settings, Recommendations turns them on.</string>
+    <string name="dock_layout_state" translatable="false">Dock: %1$s</string>
+    <string name="dock_layout_scrolling" translatable="false">Scrolling row</string>
+    <string name="dock_layout_grid" translatable="false">Grid</string>
+    <string name="rec_permission_denied" translatable="false">Permission not granted. Over adb: pm grant com.gathin.tvhome android.permission.READ_TV_LISTINGS</string>
+</resources>
